@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulation Interface | DeadlockSim</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- vis-network for Graph Visualization -->
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+</head>
+<body class="dark-mode">
+    <header>
+        <div class="sidebar-top">
+            <div class="brand">
+                <h1><i class="fa-solid fa-microchip"></i> DeadlockSim</h1>
+            </div>
+        </div>
+        <nav>
+            <a href="{{ url_for('index') }}"><i class="fa-solid fa-home"></i> Home</a>
+            <a href="{{ url_for('dashboard') }}">📊 Dashboard</a>
+            <a href="{{ url_for('input_page') }}"><i class="fa-solid fa-play"></i> Simulator</a>
+        </nav>
+        <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Dark/Light Mode">
+            <i class="fa-solid fa-moon"></i>
+        </button>
+    </header>
+
+    <main>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; gap: 1rem; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                <button class="btn btn-secondary" onclick="window.location.href='{{ url_for('input_page') }}'">
+                    <i class="fa-solid fa-arrow-left" style="margin-right: 0.5rem;"></i> Back to Config
+                </button>
+                <h2 style="margin: 0;">
+                    {% if sim_data.mode == 'banker' %}
+                    Deadlock Avoidance (Banker's Algorithm)
+                    {% else %}
+                    Deadlock Detection
+                    {% endif %}
+                </h2>
+            </div>
+            <div class="controls-bar">
+                <button class="btn btn-secondary" id="btn-prev" onclick="stepPrev()" disabled><i class="fa-solid fa-backward-step"></i> Step</button>
+                <button class="btn btn-primary" id="btn-play" onclick="togglePlay()"><i class="fa-solid fa-play"></i> Play</button>
+                <button class="btn btn-secondary" id="btn-next" onclick="stepNext()"><i class="fa-solid fa-forward-step"></i> Step</button>
+                <button class="btn btn-warning" id="btn-reset" onclick="resetSim()"><i class="fa-solid fa-rotate-right"></i> Reset</button>
+                
+                <div class="speed-control" style="margin-left: 1rem;">
+                    <label for="speed"><i class="fa-solid fa-gauge-high"></i> Speed</label>
+                    <input type="range" id="speed" min="200" max="2000" value="1000" step="100" style="direction: rtl;">
+                </div>
+            </div>
+        </div>
+
+        <div class="sim-layout">
+            <div class="sim-panel">
+                <div class="glass-card">
+                    <h3>Process States</h3>
+                    <div class="state-table-wrapper">
+                        <table class="state-table" id="process-table">
+                            <thead>
+                                <tr id="process-table-header">
+                                    <th>Process</th>
+                                    <th>Allocation</th>
+                                    {% if sim_data.mode == 'banker' %}
+                                    <th>Maximum</th>
+                                    <th>Need</th>
+                                    {% else %}
+                                    <th>Request</th>
+                                    {% endif %}
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="process-table-body">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="glass-card">
+                    <div style="display: flex; justify-content: space-between;">
+                        <h3>Available Resources (Work)</h3>
+                        <div id="work-array" style="font-family: monospace; font-size: 1.2rem; font-weight: bold; color: var(--color-green);"></div>
+                    </div>
+                </div>
+
+                <div class="glass-card">
+                    <h3>System Snapshot</h3>
+                    <div style="display: grid; grid-template-columns: repeat(3, minmax(120px, 1fr)); gap: 1rem; margin-top: 1rem;">
+                        <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 12px;">
+                            <div style="color: var(--text-secondary); font-size: 0.9rem;">Processes</div>
+                            <div class="stat-number">{{ sim_data.processes }}</div>
+                        </div>
+                        <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 12px;">
+                            <div style="color: var(--text-secondary); font-size: 0.9rem;">Resources</div>
+                            <div class="stat-number">{{ sim_data.resources }}</div>
+                        </div>
+                        <div style="padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 12px;">
+                            <div style="color: var(--text-secondary); font-size: 0.9rem;">Mode</div>
+                            <div style="font-size: 1rem; font-weight: 700; color: var(--text-primary);">{{ 'Banker\'s' if sim_data.mode == 'banker' else 'Detection' }}</div>
+                        </div>
+                    </div>
+                    <div class="progress-track" style="margin-top: 1.5rem;">
+                        <div id="step-progress" class="progress-fill"></div>
+                    </div>
+                    <div style="margin-top: 0.8rem; color: var(--text-secondary); font-size: 0.95rem;">Live simulation progress updates as Banker steps execute.</div>
+                </div>
+
+                <div class="glass-card">
+                    <h3>Resource Allocation Graph</h3>
+                    <div id="resource-graph" style="margin-top: 1rem;"></div>
+                </div>
+            </div>
+
+            <div class="sim-panel">
+                <div class="glass-card" style="flex: 1; display: flex; flex-direction: column;">
+                    <h3>Execution Logs</h3>
+                    <div class="log-panel" id="log-panel" style="margin-top: 1rem;">
+                        <!-- Logs appended here -->
+                    </div>
+                </div>
+
+                <div class="glass-card" id="banker-advice-panel" style="display: none; border-color: var(--color-blue);">
+                    <h3 style="color: #3b82f6;"><i class="fa-solid fa-lightbulb"></i> Banker's Advice</h3>
+                    <p id="banker-advice-text" style="margin: 1rem 0; color: var(--text-secondary);"></p>
+                </div>
+
+                <div class="glass-card" id="recovery-panel" style="display: none; border-color: var(--color-red);">
+                    <h3 style="color: var(--color-red);"><i class="fa-solid fa-triangle-exclamation"></i> Deadlock Detected</h3>
+                    <p style="margin: 1rem 0; color: var(--text-secondary);">The system has entered a deadlocked state. You must recover resources to continue.</p>
+                    <button class="btn btn-danger" style="width: 100%; margin-bottom: 0.5rem;" onclick="recoverTerminate()">Terminate Deadlocked Process</button>
+                    <button class="btn btn-warning" style="width: 100%;" onclick="recoverPreempt()">Preempt Resources</button>
+                </div>
+                
+                <div class="glass-card" id="export-panel" style="display: none; border-color: var(--color-green);">
+                    <h3 style="color: var(--color-green);"><i class="fa-solid fa-circle-check"></i> Simulation Complete</h3>
+                    <p style="margin: 1rem 0; color: var(--text-secondary);" id="final-result-text">System is in a safe state.</p>
+                    <div style="display: flex; gap: 1rem;">
+                        <button class="btn btn-secondary" style="flex: 1;" onclick="exportCSV()"><i class="fa-solid fa-file-csv"></i> Export CSV</button>
+                        <button class="btn btn-secondary" style="flex: 1;" onclick="exportPDF()"><i class="fa-solid fa-file-pdf"></i> Export PDF</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Expose simulator data to JS -->
+    <script>
+        const simData = {{ sim_data | tojson | safe }};
+    </script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script src="{{ url_for('static', filename='graph.js') }}"></script>
+</body>
+</html>

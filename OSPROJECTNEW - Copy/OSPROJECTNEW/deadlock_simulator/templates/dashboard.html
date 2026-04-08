@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | DeadlockSim</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="dark-mode">
+    <header>
+        <h1><i class="fa-solid fa-microchip"></i> DeadlockSim</h1>
+        <div class="nav-wrapper">
+            <nav>
+                <a href="{{ url_for('index') }}"><i class="fa-solid fa-home"></i> Home</a>
+                <a href="{{ url_for('dashboard') }}" style="color: var(--text-primary);">📊 Dashboard</a>
+                <a href="{{ url_for('input_page') }}"><i class="fa-solid fa-play"></i> Simulator</a>
+            </nav>
+            <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Dark/Light Mode">
+                <i class="fa-solid fa-moon"></i>
+            </button>
+        </div>
+    </header>
+
+    <main>
+        <h2><i class="fa-solid fa-chart-line"></i> Dashboard</h2>
+
+        <div class="dashboard-grid">
+            <div class="glass-card dashboard-card">
+                <h3><i class="fa-solid fa-circle-info"></i> About</h3>
+                <p>DeadlockSim is an interactive deadlock simulator for operating systems. Learn how algorithms prevent and detect deadlocks.</p>
+                <button class="btn btn-primary" onclick="toggleHelpPanel()">Need Help?</button>
+            </div>
+
+            <div class="glass-card dashboard-card">
+                <h3><i class="fa-solid fa-play"></i> Quick Start</h3>
+                <p>Choose an algorithm and enter process/resource data to run a simulation.</p>
+                <a href="{{ url_for('input_page') }}" class="btn btn-primary">Start Simulation</a>
+            </div>
+
+            <div class="glass-card dashboard-card">
+                <h3><i class="fa-solid fa-history"></i> Recent Simulations</h3>
+                <div id="recent-list" style="max-height: 200px; overflow-y: auto;">
+                    <p style="color: var(--text-secondary);">No simulations yet. Run one to see it here.</p>
+                </div>
+                <button class="btn btn-secondary" onclick="clearHistory()">Clear History</button>
+            </div>
+
+            <div class="glass-card dashboard-card">
+                <h3><i class="fa-solid fa-book"></i> Algorithms</h3>
+                <ul style="list-style: none; padding: 0;">
+                    <li style="padding: 0.5rem 0;"><strong>Banker's Algorithm:</strong> Deadlock avoidance</li>
+                    <li style="padding: 0.5rem 0;"><strong>Detection:</strong> Detect and recover from deadlock</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="glass-card" style="margin-top: 2rem; display: none;" id="help-panel">
+            <h3><i class="fa-solid fa-circle-question"></i> Help & Guide</h3>
+            
+            <details style="margin: 1rem 0;">
+                <summary><strong>What is Banker's Algorithm?</strong></summary>
+                <p style="margin-top: 0.5rem; color: var(--text-secondary);">Banker's Algorithm is a deadlock avoidance algorithm. Before allocating resources to a process, it checks if the system would remain in a safe state. If not, it denies the allocation. This prevents deadlock from happening.</p>
+            </details>
+
+            <details style="margin: 1rem 0;">
+                <summary><strong>What is Deadlock Detection?</strong></summary>
+                <p style="margin-top: 0.5rem; color: var(--text-secondary);">Deadlock Detection allows resource allocation freely, then periodically checks if the system is in a deadlocked state. If deadlock is detected, recovery actions (terminate or preempt) are offered to break the deadlock.</p>
+            </details>
+
+            <details style="margin: 1rem 0;">
+                <summary><strong>Recovery Actions</strong></summary>
+                <p style="margin-top: 0.5rem; color: var(--text-secondary);"><strong>Terminate:</strong> Kill a deadlocked process and release all its resources. <br><br><strong>Preempt:</strong> Take one resource from a deadlocked process. Less disruptive, may need multiple attempts.</p>
+            </details>
+
+            <button class="btn btn-secondary" onclick="toggleHelpPanel()">Close Help</button>
+        </div>
+    </main>
+
+    <script>
+        function loadRecent() {
+            const recent = JSON.parse(localStorage.getItem('recentSimulations') || '[]');
+            const list = document.getElementById('recent-list');
+            if (recent.length === 0) {
+                list.innerHTML = '<p style="color: var(--text-secondary);">No simulations yet. Run one to see it here.</p>';
+                return;
+            }
+            list.innerHTML = recent.map((sim, idx) => `
+                <div style="padding: 0.5rem; border-bottom: 1px solid var(--card-border);">
+                    <strong>${sim.mode}</strong> - ${sim.date}
+                    <br><small style="color: var(--text-secondary);">P${sim.processes} R${sim.resources}</small>
+                </div>
+            `).join('');
+        }
+
+        function clearHistory() {
+            if (confirm('Clear all simulation history?')) {
+                localStorage.removeItem('recentSimulations');
+                loadRecent();
+            }
+        }
+
+        function toggleHelpPanel() {
+            const panel = document.getElementById('help-panel');
+            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function toggleTheme() {
+            const body = document.body;
+            if (body.classList.contains('dark-mode')) {
+                body.classList.remove('dark-mode');
+                body.classList.add('light-mode');
+                localStorage.setItem('theme', 'light');
+                document.querySelector('.theme-toggle i').className = 'fa-solid fa-sun';
+            } else {
+                body.classList.remove('light-mode');
+                body.classList.add('dark-mode');
+                localStorage.setItem('theme', 'dark');
+                document.querySelector('.theme-toggle i').className = 'fa-solid fa-moon';
+            }
+        }
+
+        function loadTheme() {
+            const theme = localStorage.getItem('theme') || 'dark';
+            const body = document.body;
+            if (theme === 'light') {
+                body.classList.remove('dark-mode');
+                body.classList.add('light-mode');
+                document.querySelector('.theme-toggle i').className = 'fa-solid fa-sun';
+            }
+        }
+
+        loadRecent();
+        loadTheme();
+    </script>
+</body>
+</html>

@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | DeadlockSim</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="dark-mode">
+    <header>
+        <div class="sidebar-top">
+            <div class="brand">
+                <h1><i class="fa-solid fa-microchip"></i> DeadlockSim</h1>
+            </div>
+        </div>
+        <nav>
+            <a href="{{ url_for('index') }}"><i class="fa-solid fa-home"></i> Home</a>
+            <a href="{{ url_for('dashboard') }}" style="color: var(--text-primary);"><i class="fa-solid fa-chart-line"></i> Dashboard</a>
+            <a href="{{ url_for('input_page') }}"><i class="fa-solid fa-play"></i> Simulator</a>
+            <a href="#" onclick="toggleHelpPanel(); return false;"><i class="fa-solid fa-book"></i> Guide</a>
+        </nav>
+        <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Dark/Light Mode">
+            <i class="fa-solid fa-moon"></i>
+        </button>
+    </header>
+
+    <main>
+        <!-- Welcome Header -->
+        <div style="margin-bottom: 3rem;">
+            <h2 style="font-size: 2.2rem; margin-bottom: 0.5rem;">Dashboard</h2>
+            <p style="color: var(--text-secondary); font-size: 1.05rem;">Welcome to DeadlockSim - Your interactive deadlock learning platform</p>
+        </div>
+
+        <!-- Key Stats -->
+        <div class="dashboard-grid">
+            <div class="glass-card dashboard-card">
+                <h3><i class="fa-solid fa-code-branch"></i> Banker's Algorithm</h3>
+                <div class="stat-label">Deadlock Avoidance</div>
+                <p style="margin: 1rem 0; color: var(--text-secondary);">Calculates safe sequences to prevent deadlock.</p>
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                    <span style="background: rgba(59, 130, 246, 0.2); padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.85rem;">Preventive</span>
+                    <span style="background: rgba(34, 197, 94, 0.2); padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.85rem;">Safe</span>
+                </div>
+            </div>
+
+            <div class="glass-card dashboard-card">
+                <h3><i class="fa-solid fa-sitemap"></i> Detection Algorithm</h3>
+                <div class="stat-label">Deadlock Detection & Recovery</div>
+                <p style="margin: 1rem 0; color: var(--text-secondary);">Finds and resolves existing deadlocks.</p>
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                    <span style="background: rgba(239, 68, 68, 0.2); padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.85rem;">Reactive</span>
+                    <span style="background: rgba(245, 158, 11, 0.2); padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.85rem;">Recovery</span>
+                </div>
+            </div>
+
+            <div class="glass-card dashboard-card">
+                <h3><i class="fa-solid fa-play-circle"></i> Quick Stats</h3>
+                <div style="margin-top: 1rem;">
+                    <div style="display: flex; justify-content: space-between; margin: 0.8rem 0; padding: 0.8rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                        <span style="color: var(--text-secondary);">Total Simulations:</span>
+                        <span class="stat-number" style="font-size: 1.8rem; margin: 0;" id="total-sims">0</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin: 0.8rem 0; padding: 0.8rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                        <span style="color: var(--text-secondary);">Recent Activity:</span>
+                        <span style="color: #22c55e;" id="last-sim">Never</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-card dashboard-card">
+                <h3><i class="fa-solid fa-layer-group"></i> Last Scenario</h3>
+                <div class="stat-label">Processes & Resources</div>
+                <p id="last-sim-summary" style="margin: 1rem 0; color: var(--text-secondary);">No simulations yet. Run one to see details here.</p>
+                <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 150px; background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 12px;">
+                        <div style="color: var(--text-secondary); font-size: 0.95rem;">Processes</div>
+                        <div class="stat-number" id="summary-processes">0</div>
+                    </div>
+                    <div style="flex: 1; min-width: 150px; background: rgba(255,255,255,0.05); padding: 1rem; border-radius: 12px;">
+                        <div style="color: var(--text-secondary); font-size: 0.95rem;">Resources</div>
+                        <div class="stat-number" id="summary-resources">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-card dashboard-card">
+                <h3><i class="fa-solid fa-book-open"></i> Features</h3>
+                <ul style="list-style: none; padding: 0; margin-top: 1rem;">
+                    <li style="padding: 0.5rem 0; border-bottom: 1px solid var(--card-border); color: var(--text-secondary);"><i class="fa-solid fa-check" style="color: #22c55e; margin-right: 0.5rem;"></i> Visual Graphs</li>
+                    <li style="padding: 0.5rem 0; border-bottom: 1px solid var(--card-border); color: var(--text-secondary);"><i class="fa-solid fa-check" style="color: #22c55e; margin-right: 0.5rem;"></i> Step-by-Step Playback</li>
+                    <li style="padding: 0.5rem 0; border-bottom: 1px solid var(--card-border); color: var(--text-secondary);"><i class="fa-solid fa-check" style="color: #22c55e; margin-right: 0.5rem;"></i> Recovery Actions</li>
+                    <li style="padding: 0.5rem 0; color: var(--text-secondary);"><i class="fa-solid fa-check" style="color: #22c55e; margin-right: 0.5rem;"></i> Export Results</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Main Action Buttons -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin: 3rem 0;">
+            <div class="glass-card" style="text-align: center; padding: 3rem;">
+                <i class="fa-solid fa-rocket" style="font-size: 3rem; color: #3b82f6; margin-bottom: 1rem;"></i>
+                <h3 style="margin: 1rem 0;">Start Simulation</h3>
+                <p style="color: var(--text-secondary); margin: 1rem 0; line-height: 1.6;">Configure your system and run a deadlock simulation using Banker's Algorithm or Detection & Recovery.</p>
+                <a href="{{ url_for('input_page') }}" class="btn btn-primary btn-large" style="width: 100%;">
+                    <i class="fa-solid fa-play"></i> New Simulation
+                </a>
+            </div>
+
+            <div class="glass-card" style="text-align: center; padding: 3rem;">
+                <i class="fa-solid fa-circle-question" style="font-size: 3rem; color: #22c55e; margin-bottom: 1rem;"></i>
+                <h3 style="margin: 1rem 0;">Learn & Help</h3>
+                <p style="color: var(--text-secondary); margin: 1rem 0; line-height: 1.6;">Get detailed explanations about algorithms, recovery methods, and operating system deadlock concepts.</p>
+                <button class="btn btn-secondary btn-large" onclick="toggleHelpPanel()" style="width: 100%;">
+                    <i class="fa-solid fa-book"></i> View Guide
+                </button>
+            </div>
+        </div>
+
+        <!-- Recent Simulations -->
+        <div class="glass-card" style="margin-top: 3rem;">
+            <h3 style="margin-bottom: 1.5rem;"><i class="fa-solid fa-history"></i> Recent Simulations</h3>
+            <div id="recent-list" style="display: grid; gap: 1rem;">
+                <p style="color: var(--text-secondary); text-align: center; padding: 2rem;">No simulations yet. Run one to see it here!</p>
+            </div>
+            <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                <button class="btn btn-secondary" onclick="loadRecent()">
+                    <i class="fa-solid fa-refresh"></i> Refresh
+                </button>
+                <button class="btn btn-warning" onclick="clearHistory()">
+                    <i class="fa-solid fa-trash"></i> Clear History
+                </button>
+            </div>
+            <div id="history-detail" style="margin-top: 1.5rem; display:none;">
+                <div class="glass-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                        <h3 style="margin: 0;">History Details</h3>
+                        <button class="btn btn-secondary" onclick="closeHistoryDetail()" style="padding: 0.5rem 0.75rem;">
+                            <i class="fa-solid fa-times"></i>
+                        </button>
+                    </div>
+                    <pre id="history-detail-content" style="white-space: pre-wrap; color: var(--text-secondary); font-size: 0.95rem;"></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Help Panel -->
+        <div class="glass-card" style="margin-top: 3rem; display: none;" id="help-panel">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <h3><i class="fa-solid fa-circle-question"></i> Learning Guide</h3>
+                <button class="btn btn-secondary" onclick="toggleHelpPanel()" style="padding: 0.5rem 1rem;">
+                    <i class="fa-solid fa-times"></i> Close
+                </button>
+            </div>
+            
+            <details style="margin: 1rem 0; padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                <summary style="cursor: pointer; font-weight: bold; color: #60a5fa;"><i class="fa-solid fa-question-circle" style="margin-right: 0.8rem;"></i> What is Banker's Algorithm?</summary>
+                <p style="margin-top: 1rem; color: var(--text-secondary); line-height: 1.8;">
+                    Banker's Algorithm is a deadlock AVOIDANCE algorithm. Before allocating resources:
+                    <br>1. It calculates if the system would remain SAFE
+                    <br>2. Only grants allocation if Safety can be guaranteed
+                    <br>3. Prevents deadlock from ever occurring
+                    <br><strong>Result:</strong> No deadlock = No recovery needed!
+                </p>
+            </details>
+
+            <details style="margin: 1rem 0; padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                <summary style="cursor: pointer; font-weight: bold; color: #ef4444;"><i class="fa-solid fa-exclamation-triangle" style="margin-right: 0.8rem;"></i> What is Deadlock Detection?</summary>
+                <p style="margin-top: 1rem; color: var(--text-secondary); line-height: 1.8;">
+                    Deadlock Detection is a REACTIVE approach:
+                    <br>1. Allows resource allocation freely
+                    <br>2. Periodically checks if system is deadlocked
+                    <br>3. If deadlock found, triggers RECOVERY actions
+                    <br><strong>Recovery Options:</strong> Terminate processes or Preempt resources
+                </p>
+            </details>
+
+            <details style="margin: 1rem 0; padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                <summary style="cursor: pointer; font-weight: bold; color: #f59e0b;"><i class="fa-solid fa-wrench" style="margin-right: 0.8rem;"></i> Recovery Methods</summary>
+                <p style="margin-top: 1rem; color: var(--text-secondary); line-height: 1.8;">
+                    <strong>🔴 Process Termination:</strong> Kill a deadlocked process. Drastic but guaranteed to work. Loses process work entirely.
+                    <br><br>
+                    <strong>🟡 Resource Preemption:</strong> Take one resource from a process. Less disruptive. May need multiple attempts.
+                    <br><br>
+                    <strong>💡 Strategy:</strong> Try preemption first (less loss). Switch to termination if needed.
+                </p>
+            </details>
+
+            <details style="margin: 1rem 0; padding: 1rem; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                <summary style="cursor: pointer; font-weight: bold; color: #06b6d4;"><i class="fa-solid fa-lightbulb" style="margin-right: 0.8rem;"></i> Key Concepts</summary>
+                <div style="margin-top: 1rem; color: var(--text-secondary); line-height: 1.8;">
+                    <div style="margin: 0.8rem 0; padding: 0.8rem; background: rgba(255,255,255,0.03); border-left: 3px solid #60a5fa; border-radius: 4px;">
+                        <strong>Safe State:</strong> All processes can complete in some execution order
+                    </div>
+                    <div style="margin: 0.8rem 0; padding: 0.8rem; background: rgba(255,255,255,0.03); border-left: 3px solid #ef4444; border-radius: 4px;">
+                        <strong>Deadlock:</strong> Circular wait where processes block each other indefinitely
+                    </div>
+                    <div style="margin: 0.8rem 0; padding: 0.8rem; background: rgba(255,255,255,0.03); border-left: 3px solid #22c55e; border-radius: 4px;">
+                        <strong>Resource:</strong> Any entity (CPU, memory, I/O) needed for process execution
+                    </div>
+                    <div style="margin: 0.8rem 0; padding: 0.8rem; background: rgba(255,255,255,0.03); border-left: 3px solid #f59e0b; border-radius: 4px;">
+                        <strong>Need Matrix:</strong> Additional resources = Max Demand - Current Allocation
+                    </div>
+                </div>
+            </details>
+        </div>
+    </main>
+
+    <script>
+        function loadRecent() {
+            const recent = JSON.parse(localStorage.getItem('recentSimulations') || '[]');
+            const list = document.getElementById('recent-list');
+            const totalSims = document.getElementById('total-sims');
+            const lastSim = document.getElementById('last-sim');
+            const summaryProcesses = document.getElementById('summary-processes');
+            const summaryResources = document.getElementById('summary-resources');
+            const lastSummary = document.getElementById('last-sim-summary');
+            
+            totalSims.textContent = recent.length;
+            
+            if (recent.length === 0) {
+                list.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 2rem;">No simulations yet. Run one to see it here!</p>';
+                lastSim.textContent = 'Never';
+                summaryProcesses.textContent = '0';
+                summaryResources.textContent = '0';
+                lastSummary.textContent = 'No simulations yet. Run one to see details here.';
+                return;
+            }
+            
+            const latest = recent[0];
+            lastSim.textContent = latest.date;
+            summaryProcesses.textContent = latest.processes;
+            summaryResources.textContent = latest.resources;
+            lastSummary.textContent = `Latest ${latest.mode === 'banker' ? "Banker's" : 'Detection'} run: ${latest.processes} processes, ${latest.resources} resources.`;
+            
+            list.innerHTML = recent.map((sim, idx) => `
+                <div style="padding: 1rem; background: rgba(255,255,255,0.03); border-radius: 8px; border-left: 3px solid #3b82f6;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                        <div>
+                            <strong style="font-size: 1.05rem;">${sim.mode === 'banker' ? '🔐 Banker\'s Algorithm' : '🔍 Detection Mode'}</strong>
+                            <p style="color: var(--text-secondary); margin-top: 0.3rem;">P${sim.processes} processes | R${sim.resources} resources</p>
+                            <p style="color: var(--text-secondary); margin-top: 0.2rem; font-size: 0.85rem;">${sim.date}</p>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                            <button class="btn btn-secondary" onclick="loadHistoryItem(${idx})">Load</button>
+                            <button class="btn btn-primary" onclick="inspectHistoryItem(${idx})">Inspect</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function clearHistory() {
+            if (confirm('Clear all simulation history? This cannot be undone.')) {
+                localStorage.removeItem('recentSimulations');
+                document.getElementById('history-detail').style.display = 'none';
+                loadRecent();
+            }
+        }
+
+        function loadHistoryItem(index) {
+            const recent = JSON.parse(localStorage.getItem('recentSimulations') || '[]');
+            const item = recent[index];
+            if (!item) return;
+            localStorage.setItem('currentConfig', JSON.stringify(item.data));
+            localStorage.setItem('currentConfigSource', `${item.date} (history)`);
+            window.location.href = '/input';
+        }
+
+        function inspectHistoryItem(index) {
+            const recent = JSON.parse(localStorage.getItem('recentSimulations') || '[]');
+            const item = recent[index];
+            if (!item) return;
+            const content = `Date: ${item.date}\nMode: ${item.mode}\nProcesses: ${item.processes}\nResources: ${item.resources}\n\nAllocation:\n${JSON.stringify(item.data.allocation, null, 2)}\n\n${item.mode === 'banker' ? 'Maximum' : 'Request'}:\n${JSON.stringify(item.data.demand, null, 2)}\n\nAvailable:\n${JSON.stringify(item.data.available, null, 2)}`;
+            const detail = document.getElementById('history-detail');
+            const detailContent = document.getElementById('history-detail-content');
+            detailContent.innerText = content;
+            detail.style.display = 'block';
+            detail.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function closeHistoryDetail() {
+            const detail = document.getElementById('history-detail');
+            if (detail) {
+                detail.style.display = 'none';
+            }
+        }
+
+        function toggleHelpPanel() {
+            const panel = document.getElementById('help-panel');
+            const isHidden = panel.style.display === 'none' || panel.style.display === '';
+            panel.style.display = isHidden ? 'block' : 'none';
+            if (isHidden) {
+                panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        function toggleTheme() {
+            const body = document.body;
+            const btn = document.querySelector('.theme-toggle i');
+            if (body.classList.contains('dark-mode')) {
+                body.classList.remove('dark-mode');
+                body.classList.add('light-mode');
+                btn.className = 'fa-solid fa-sun';
+                localStorage.setItem('theme', 'light');
+            } else {
+                body.classList.remove('light-mode');
+                body.classList.add('dark-mode');
+                btn.className = 'fa-solid fa-moon';
+                localStorage.setItem('theme', 'dark');
+            }
+        }
+
+        function loadTheme() {
+            const theme = localStorage.getItem('theme') || 'dark';
+            const body = document.body;
+            const btn = document.querySelector('.theme-toggle i');
+            if (theme === 'light') {
+                body.classList.remove('dark-mode');
+                body.classList.add('light-mode');
+                btn.className = 'fa-solid fa-sun';
+            }
+        }
+
+        loadRecent();
+        loadTheme();
+    </script>
+</body>
+</html>

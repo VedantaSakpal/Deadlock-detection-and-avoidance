@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Input Scenario | DeadlockSim</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body class="dark-mode">
+    <header>
+        <div class="sidebar-top">
+            <div class="brand">
+                <h1><i class="fa-solid fa-microchip"></i> DeadlockSim</h1>
+            </div>
+        </div>
+        <nav>
+            <a href="{{ url_for('index') }}"><i class="fa-solid fa-home"></i> Home</a>
+            <a href="{{ url_for('dashboard') }}">📊 Dashboard</a>
+            <a href="{{ url_for('input_page') }}" style="color: var(--text-primary);"><i class="fa-solid fa-play"></i> Simulator</a>
+        </nav>
+        <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Dark/Light Mode">
+            <i class="fa-solid fa-moon"></i>
+        </button>
+    </header>
+
+    <main>
+        <div class="glass-card" style="max-width: 1000px; margin: 0 auto; animation: fadeIn 0.5s ease-out;">
+            <h2 style="margin-bottom: 1.5rem; text-align: center;">System Configuration</h2>
+            
+            <div class="input-grid">
+                <div>
+                    <div class="form-group">
+                        <label for="mode">Simulation Mode</label>
+                        <select id="mode" class="form-control" onchange="updateLabels()">
+                            <option value="banker">Deadlock Avoidance (Banker's Algorithm)</option>
+                            <option value="detection">Deadlock Detection & Recovery</option>
+                        </select>
+                    </div>
+
+                    <div style="display: flex; gap: 1rem;">
+                        <div class="form-group" style="flex: 1;">
+                            <label for="processes">Number of Processes (N)</label>
+                            <input type="number" id="processes" class="form-control" min="1" max="10" value="5">
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label for="resources">Number of Resources (M)</label>
+                            <input type="number" id="resources" class="form-control" min="1" max="10" value="3">
+                        </div>
+                    </div>
+                    
+                    <button class="btn btn-secondary" style="width: 100%; margin-bottom: 1rem;" onclick="generateTables()">
+                        <i class="fa-solid fa-table"></i> Generate Input Grids
+                    </button>
+                </div>
+                
+                <div style="display: flex; flex-direction: column; justify-content: center; gap: 1rem;">
+                     <div class="step-explanation" style="margin-top: 0;">
+                        <i class="fa-solid fa-circle-info" style="color: #3b82f6; margin-right: 0.5rem;"></i>
+                        <span id="mode-desc">Banker's Algorithm requires the Maximum Needs matrix to calculate Safe Sequences.</span>
+                     </div>
+                     <button class="btn btn-warning" onclick="fillRandomData()">
+                        <i class="fa-solid fa-dice"></i> Generate Random Test Case
+                     </button>
+                </div>
+            </div>
+
+            <div id="matrices-container" class="hidden" style="margin-top: 2rem; border-top: 1px solid var(--card-border); padding-top: 2rem;">
+                <h3 style="margin-bottom: 1rem;">Resource Matrices</h3>
+                <div style="display: flex; flex-wrap: wrap; gap: 2rem; justify-content: space-between;">
+                    
+                    <div style="flex: 1; min-width: 300px;">
+                        <h4>Allocation Matrix</h4>
+                        <table class="matrix-table" id="allocation-table"></table>
+                    </div>
+
+                    <div style="flex: 1; min-width: 300px;">
+                        <h4 id="demand-label">Maximum Matrix</h4>
+                        <table class="matrix-table" id="demand-table"></table>
+                    </div>
+
+                </div>
+
+                <div style="margin-top: 2rem;">
+                    <h4>Available Resources (Initial)</h4>
+                    <table class="matrix-table" id="available-table" style="width: auto;"></table>
+                </div>
+
+                <div style="margin-top: 3rem; text-align: center;">
+                    <button class="btn btn-primary btn-large" onclick="submitSimulation()" style="padding: 1rem 3rem;">
+                        <i class="fa-solid fa-play"></i> Run Simulation
+                    </button>
+                    <p id="error-msg" style="color: var(--color-red); margin-top: 1rem; display: none;">Please fill all fields with valid numbers.</p>
+                    <p id="hint-msg" style="color: var(--text-secondary); margin-top: 0.5rem; display: none;">Suggested fix will appear here.</p>
+                </div>
+            </div>
+            
+        </div>
+    </main>
+
+    <script>
+        function updateLabels() {
+            const mode = document.getElementById('mode').value;
+            const desc = document.getElementById('mode-desc');
+            const demandLabel = document.getElementById('demand-label');
+            
+            if (mode === 'banker') {
+                desc.innerText = "Banker's Algorithm requires the Maximum Needs matrix to calculate Safe Sequences.";
+                demandLabel.innerText = "Maximum Matrix";
+            } else {
+                desc.innerText = "Detection Algorithm requires the current Request Matrix to search for circular wait dependencies.";
+                demandLabel.innerText = "Request Matrix";
+            }
+        }
+
+        function generateTables() {
+            const numP = parseInt(document.getElementById('processes').value) || 5;
+            const numR = parseInt(document.getElementById('resources').value) || 3;
+            
+            if(numP < 1 || numP > 10 || numR < 1 || numR > 10) {
+                alert("Please enter values between 1 and 10.");
+                return;
+            }
+
+            document.getElementById('matrices-container').classList.remove('hidden');
+
+            const allocTable = document.getElementById('allocation-table');
+            const demandTable = document.getElementById('demand-table');
+            const availTable = document.getElementById('available-table');
+            
+            allocTable.innerHTML = '';
+            demandTable.innerHTML = '';
+            availTable.innerHTML = '';
+
+            // Header row
+            let headerHTML = '<tr><th>Process</th>';
+            for(let j=0; j<numR; j++) headerHTML += `<th>R${j}</th>`;
+            headerHTML += '</tr>';
+            allocTable.innerHTML = headerHTML;
+            demandTable.innerHTML = headerHTML;
+
+            // Generate alloc and demand grids
+            for(let i=0; i<numP; i++) {
+                let rowAlloc = `<tr><th>P${i}</th>`;
+                let rowDemand = `<tr><th>P${i}</th>`;
+                for(let j=0; j<numR; j++) {
+                    rowAlloc += `<td><input type="number" min="0" class="alloc-val" data-p="${i}" data-r="${j}" value="0"></td>`;
+                    rowDemand += `<td><input type="number" min="0" class="demand-val" data-p="${i}" data-r="${j}" value="0"></td>`;
+                }
+                rowAlloc += `</tr>`;
+                rowDemand += `</tr>`;
+                allocTable.innerHTML += rowAlloc;
+                demandTable.innerHTML += rowDemand;
+            }
+
+            // Available Resource array
+            let availRow = '<tr>';
+            for(let j=0; j<numR; j++) availRow += `<th>R${j}</th>`;
+            availRow += '</tr><tr>';
+            for(let j=0; j<numR; j++) {
+                availRow += `<td><input type="number" min="0" class="avail-val" data-r="${j}" value="0"></td>`;
+            }
+            availRow += '</tr>';
+            availTable.innerHTML = availRow;
+        }
+
+        function fillRandomData() {
+            const isVisible = !document.getElementById('matrices-container').classList.contains('hidden');
+            if(!isVisible) {
+                generateTables();
+            }
+
+            const allocInputs = document.querySelectorAll('.alloc-val');
+            const demandInputs = document.querySelectorAll('.demand-val');
+            const availInputs = document.querySelectorAll('.avail-val');
+            const mode = document.getElementById('mode').value;
+
+            // Simple random data generation that makes sense
+            // 1. Generate available resources
+            availInputs.forEach(inp => { inp.value = Math.floor(Math.random() * 5); });
+
+            // 2. Pairwise random generation for allocation & max/request
+            for(let i=0; i<allocInputs.length; i++) {
+                let alloc = Math.floor(Math.random() * 4);
+                allocInputs[i].value = alloc;
+                
+                let demand = mode === 'banker' ? alloc + Math.floor(Math.random() * 5) : Math.floor(Math.random() * 5);
+                demandInputs[i].value = demand;
+            }
+        }
+
+        async function submitSimulation() {
+            const numP = parseInt(document.getElementById('processes').value);
+            const numR = parseInt(document.getElementById('resources').value);
+            const mode = document.getElementById('mode').value;
+            const errorMsg = document.getElementById('error-msg');
+            const hintMsg = document.getElementById('hint-msg');
+            errorMsg.style.display = 'none';
+            hintMsg.style.display = 'none';
+            errorMsg.innerText = '';
+            hintMsg.innerText = '';
+
+            let allocation = [];
+            let demand = []; // Maps to Max or Request based on mode
+            let available = [];
+            let hintText = '';
+
+            document.querySelectorAll('.alloc-val, .demand-val, .avail-val').forEach(el => el.classList.remove('input-error'));
+
+            // Parse tables
+            try {
+                for(let i=0; i<numP; i++) {
+                    allocation.push([]);
+                    demand.push([]);
+                    for(let j=0; j<numR; j++) {
+                        const allocInput = document.querySelector(`.alloc-val[data-p="${i}"][data-r="${j}"]`);
+                        const demandInput = document.querySelector(`.demand-val[data-p="${i}"][data-r="${j}"]`);
+                        let aVal = parseInt(allocInput.value);
+                        let dVal = parseInt(demandInput.value);
+                        if(isNaN(aVal) || isNaN(dVal) || aVal < 0 || dVal < 0) {
+                            allocInput.classList.add('input-error');
+                            demandInput.classList.add('input-error');
+                            hintText = 'Each resource cell must contain a non-negative integer.';
+                            throw `Invalid input at P${i}, R${j}.`;
+                        }
+
+                        if(mode === 'banker' && aVal > dVal) {
+                            allocInput.classList.add('input-error');
+                            demandInput.classList.add('input-error');
+                            hintText = `Suggestion: For P${i}, R${j}, set Maximum Demand to at least ${aVal}, or lower Allocation to ${dVal} or below.`;
+                            throw `Banker's validation failed at P${i}, R${j}: allocation (${aVal}) exceeds maximum demand (${dVal}).`;
+                        }
+
+                        allocation[i].push(aVal);
+                        demand[i].push(dVal);
+                    }
+                }
+
+                for(let j=0; j<numR; j++) {
+                    const availInput = document.querySelector(`.avail-val[data-r="${j}"]`);
+                    let avVal = parseInt(availInput.value);
+                    if(isNaN(avVal) || avVal < 0) {
+                        availInput.classList.add('input-error');
+                        hintText = 'Available resource counts must be non-negative integers.';
+                        throw `Invalid available resource amount at R${j}.`;
+                    }
+                    available.push(avVal);
+                }
+            } catch (e) {
+                errorMsg.innerText = e.message || e;
+                errorMsg.style.display = 'block';
+                if(hintText) {
+                    hintMsg.innerText = hintText;
+                    hintMsg.style.display = 'block';
+                }
+                return;
+            }
+
+            const payload = {
+                mode: mode,
+                processes: numP,
+                resources: numR,
+                allocation: allocation,
+                demand: demand,
+                available: available
+            };
+            
+            // Persist current configuration for back navigation
+            localStorage.setItem('currentConfig', JSON.stringify(payload));
+            localStorage.setItem('currentConfigSource', new Date().toLocaleString());
+            
+            // Save to recent simulations
+            const recentSims = JSON.parse(localStorage.getItem('recentSimulations') || '[]');
+            recentSims.unshift({
+                mode: mode,
+                processes: numP,
+                resources: numR,
+                date: new Date().toLocaleString(),
+                data: payload
+            });
+            if(recentSims.length > 10) recentSims.pop();
+            localStorage.setItem('recentSimulations', JSON.stringify(recentSims));
+
+            const response = await fetch('/simulation', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if(response.ok) {
+                window.location.href = '/simulation'; // Redirect to simulation page
+            } else {
+                errorMsg.innerText = "Internal server error submitting data.";
+                errorMsg.style.display = 'block';
+            }
+        }
+
+        function toggleTheme() {
+            const body = document.body;
+            const btn = document.querySelector('.theme-toggle i');
+            if (body.classList.contains('dark-mode')) {
+                body.classList.remove('dark-mode');
+                body.classList.add('light-mode');
+                btn.className = 'fa-solid fa-sun';
+                localStorage.setItem('theme', 'light');
+            } else {
+                body.classList.remove('light-mode');
+                body.classList.add('dark-mode');
+                btn.className = 'fa-solid fa-moon';
+                localStorage.setItem('theme', 'dark');
+            }
+        }
+
+        function restoreSavedConfig() {
+            const saved = localStorage.getItem('currentConfig');
+            if (!saved) return;
+
+            const config = JSON.parse(saved);
+            if (!config || !config.processes || !config.resources) return;
+
+            document.getElementById('mode').value = config.mode || 'banker';
+            document.getElementById('processes').value = config.processes;
+            document.getElementById('resources').value = config.resources;
+            updateLabels();
+            generateTables();
+
+            for (let i = 0; i < config.processes; i++) {
+                for (let j = 0; j < config.resources; j++) {
+                    const allocInput = document.querySelector(`.alloc-val[data-p="${i}"][data-r="${j}"]`);
+                    const demandInput = document.querySelector(`.demand-val[data-p="${i}"][data-r="${j}"]`);
+                    if (allocInput) allocInput.value = config.allocation[i][j];
+                    if (demandInput) demandInput.value = config.demand[i][j];
+                }
+            }
+
+            config.available.forEach((value, j) => {
+                const availInput = document.querySelector(`.avail-val[data-r="${j}"]`);
+                if (availInput) availInput.value = value;
+            });
+
+            const savedNote = document.getElementById('saved-note');
+            if (savedNote) {
+                const source = localStorage.getItem('currentConfigSource') || 'previous session';
+                savedNote.innerText = `Loaded previous configuration from ${source}. Click Run Simulation or edit values.`;
+                savedNote.style.display = 'block';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            restoreSavedConfig();
+            loadTheme();
+        });
+
+        function loadTheme() {
+            const theme = localStorage.getItem('theme') || 'dark';
+            const body = document.body;
+            const btn = document.querySelector('.theme-toggle i');
+            if (theme === 'light') {
+                body.classList.remove('dark-mode');
+                body.classList.add('light-mode');
+                btn.className = 'fa-solid fa-sun';
+            }
+        }
+
+        loadTheme();
+    </script>
+</body>
+</html>
